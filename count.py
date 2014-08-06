@@ -1,8 +1,29 @@
+
+from optparse import OptionParser, OptionValueError
 import cv2
+import sys
+
+parser = OptionParser()
+parser.add_option("-f", "--file", dest="filename",
+                  help="Video FILE", metavar="FILE")
+parser.add_option("-q", "--quiet",
+                  action="store_false", dest="verbose", default=True,
+                  help="don't print status messages to stdout")
+
+(options, args) = parser.parse_args()
+
+
+# Check that a file is passed as an argument.
+if options.filename is None:
+    print "Pass a file as an argument. For example -f car.avi"
+    parser.print_help()
+    sys.exit(1)
+
 backsub = cv2.BackgroundSubtractorMOG()
-capture = cv2.VideoCapture("car4.avi")
+capture = cv2.VideoCapture(options.filename)
 best_id=0
 i = 0
+
 if capture:
   while True:
 
