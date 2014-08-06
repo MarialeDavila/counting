@@ -1,6 +1,6 @@
 import cv2
 backsub = cv2.BackgroundSubtractorMOG()
-capture = cv2.VideoCapture("C:\Python27\code\car.avi")
+capture = cv2.VideoCapture("car4.avi")
 best_id=0
 i = 0
 if capture:
