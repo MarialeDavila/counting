@@ -1,5 +1,6 @@
 
 from optparse import OptionParser, OptionValueError
+import numpy
 import cv2
 import sys
 
@@ -25,7 +26,7 @@ capture = cv2.VideoCapture(options.filename)
 keep_processing = True
 # Set horizon line (as a fraction of the height).
 # 0.3 means 30% from the top
-HORIZON_LINE_RATIO = 0.6
+HORIZON_LINE_RATIO = 0.9
 
 while(keep_processing):
     ret, frame = capture.read()
@@ -38,6 +39,19 @@ while(keep_processing):
     height, width, __ = frame.shape
     horizon = int(height * HORIZON_LINE_RATIO)
     fgmask = backsub.apply(frame, None, 0.01)
+
+    # eliminar cosas pequenas de la mascara.
+    kernel = numpy.ones((2, 2), numpy.uint8)
+    fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel=kernel)
+
+    # Alargar todo
+    kernel = numpy.ones((15, 1), numpy.uint8)
+    fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_DILATE, kernel=kernel)    
+
+    # cerrar huecos
+    kernel = numpy.ones((5, 5), numpy.uint8)
+    fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_DILATE, kernel=kernel)
+
     contours, hierarchy_vector = cv2.findContours(fgmask.copy(),
                                                   cv2.RETR_EXTERNAL,
                                                  cv2.CHAIN_APPROX_NONE)
@@ -54,16 +68,21 @@ while(keep_processing):
     for contour, hier in zip(contours, hierarchy):
         (x,y,w,h) = cv2.boundingRect(contour)
 
-        if y < horizon < y + h:
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (255, 0, 0), 2)
-            cv2.putText(frame, "x=%s" % x, (x,y-5), cv2.FONT_HERSHEY_SIMPLEX,
-               0.5, (255, 0, 0), 2)
+        if y < horizon < y + h and w > 150:
+            if h > 150:
+                cv2.rectangle(frame, (x,y), (x+w,y+h), (0, 255, 0), 2)
+                cv2.putText(frame, "carro %s" % h , (x,y-5), cv2.FONT_HERSHEY_SIMPLEX,
+                   0.5, (0, 255, 0), 2)
+            else:
+                cv2.rectangle(frame, (x,y), (x+w,y+h), (0, 0, 255), 2)
+                cv2.putText(frame, "%s" % h , (x,y-5), cv2.FONT_HERSHEY_SIMPLEX,
+                   0.5, (0, 0, 255), 2)
 
     cv2.imshow("Track", frame)
     cv2.imshow("background sub", fgmask)
 
     # Way for user input, if the user presses q then stop processing.
-    key = cv2.waitKey(100)
+    key = cv2.waitKey(1)
     if key == ord('q'):
         keep_processing = False
         break
